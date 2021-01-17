@@ -190,8 +190,8 @@ std::function<bool(COORD const&)> Tetaeon::GetFieldConsistentChecker()
 		bool isYConsistent = c.Y < mBorderSize + mFieldSize.Y;
         bool isConsistent = isXConsistent and isYConsistent and mField.GetCell(c) == CellType::free;
 
-        Dout() << "{ " <<isXConsistent << isYConsistent << isConsistent << ". ";
-        Dout() << "(" << std::setw(2) << c.X << ", " << std::setw(2) << c.Y << ") } " << std::endl;
+        // Dout() << "{ " <<isXConsistent << isYConsistent << isConsistent << ". ";
+        // Dout() << "(" << std::setw(2) << c.X << ", " << std::setw(2) << c.Y << ") } " << std::endl;
 
 		return isConsistent;
 	};
