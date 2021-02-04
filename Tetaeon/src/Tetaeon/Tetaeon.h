@@ -7,16 +7,16 @@
 class Tetaeon : public BaseApp
 {
 private:
-	static const short mBorderSize;
-	static const COORD mFieldSize;
-	static const short mInfoWidth;
-    static const short mInfoFigureHeight;
-	static const COORD mInfoFigureCenterPos;
-	static const COORD mInfoScorePos;
-    static const COORD mInfoCreditsDev;
-    static const COORD mInfoCreditsFor;
+	static const short BORDER_SIZE;
+	static const COORD FIELD_SIZE;
+	static const short INFO_WIDTH;
+    static const short INFO_FIGURE_HEIGHT;
+	static const COORD INFO_FIGURE_CENTER_POS;
+	static const COORD INFO_SCORE_POS;
+    static const COORD INFO_CREDITS_DEV_POS;
+    static const COORD INFO_CREDITS_FOR_POS;
 
-    static const Figure mFigures[];
+    static const Figure FIGURES[];
 	int mScore;
     Field mField;
 	Figure mCurFigure;
@@ -32,22 +32,21 @@ private:
     } mGameMode;
 
 private:
-	void SetInfo(std::wstring str, COORD pos);
+	void SetInfoHorizontal(std::wstring str, COORD pos);
     void SetInfoVertical(std::wstring str, COORD pos);
-	std::function<bool(COORD const&)> GetFieldConsistentChecker();
+	std::function<bool(COORD const&)> CreateFieldConsistentChecker() const;
     Figure GetRandFigure() const;
 
 
-    void UpdateFigureF(float dtsec);
+    void UpdateFigureF(float dtSec);
     void SetScore();
-    void PrintField();
+    void PrintField(float dtSec);
     void PrintCurFigure();
     void ClearInfoBox();
     void PrintNextFigure();
-    std::pair<wchar_t, int> ToSymbolAttributes(CellType cellType);
 
 public:
 	Tetaeon();
 	virtual void KeyPressed(int btnCode);
-	virtual void UpdateF(float dtsec);
+	virtual void UpdateF(float dtSec);
 };

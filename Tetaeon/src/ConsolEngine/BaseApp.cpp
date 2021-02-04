@@ -11,34 +11,33 @@
 
 #define MY_PERFORMENCE_COUNTER
 #include "PerformanceCounter.h"
-#include "../Debug.h"
 
-BaseApp::BaseApp(int xSize, int ySize)
-: X_SIZE(xSize)
-, Y_SIZE(ySize)
+BaseApp::BaseApp(int sizeX, int sizeY)
+: SIZE_X(sizeX)
+, SIZE_Y(sizeY)
 {
-    SetWindowSize(X_SIZE, Y_SIZE);
+    SetWindowSize(SIZE_X, SIZE_Y);
     DisableCursor();
 
-	mChiBuffer = (CHAR_INFO*)malloc((X_SIZE+1)*(Y_SIZE+1)*sizeof(CHAR_INFO));
+	mChiBuffer = (CHAR_INFO*)malloc((SIZE_X+1)*(SIZE_Y+1)*sizeof(CHAR_INFO));
 
-	mDwBufferSize.X = X_SIZE + 1;
-	mDwBufferSize.Y = Y_SIZE + 1;		// размер буфера данных
+	mDwBufferSize.X = SIZE_X + 1;
+	mDwBufferSize.Y = SIZE_Y + 1;		// размер буфера данных
 
 	mDwBufferCoord.X = 0;
 	mDwBufferCoord.Y = 0;				// координаты €чейки
 
 	mLpWriteRegion.Left = 0;
 	mLpWriteRegion.Top = 0;
-	mLpWriteRegion.Right = X_SIZE + 1;
-	mLpWriteRegion.Bottom = Y_SIZE + 1;	// пр€моугольник дл€ чтени€
+	mLpWriteRegion.Right = SIZE_X + 1;
+	mLpWriteRegion.Bottom = SIZE_Y + 1;	// пр€моугольник дл€ чтени€
 
 
-	for (int x=0; x<X_SIZE+1; x++)
+	for (short x=0; x<SIZE_X+1; x++)
 	{
-		for (int y=0; y<Y_SIZE+1; y++)
+		for (short y=0; y<SIZE_Y+1; y++)
 		{
-			SetChar(x, y, L' ');
+            SetChar({ x, y }, L' ');
 		}
 	}
 }
@@ -87,14 +86,16 @@ void BaseApp::SetSquaredFont()
         Dout() << "GetCurrentConsoleFontEx failed with error " << GetLastError() << std::endl;
     }
 
+    int screenWidth = GetSystemMetrics(SM_CXSCREEN);
+    int fontSize = int(screenWidth/1920.0 * 25);
     wchar_t faceName[] = L"Terminal";
     memcpy(mLpConsoleCurrentFontEx->FaceName, faceName, sizeof(faceName));
     isSquared =
         mLpConsoleCurrentFontEx->dwFontSize.X == mLpConsoleCurrentFontEx->dwFontSize.Y and
-        mLpConsoleCurrentFontEx->dwFontSize.X == 35;
+        mLpConsoleCurrentFontEx->dwFontSize.X == fontSize;
 
-    mLpConsoleCurrentFontEx->dwFontSize.X = 35;
-    mLpConsoleCurrentFontEx->dwFontSize.Y = 35;
+    mLpConsoleCurrentFontEx->dwFontSize.X = fontSize;
+    mLpConsoleCurrentFontEx->dwFontSize.Y = fontSize;
     if (!SetCurrentConsoleFontEx(mConsoleOut, FALSE, mLpConsoleCurrentFontEx))
     {
         Dout() << "SetCurrentConsoleFontEx failed with error " << GetLastError() << std::endl;
@@ -102,15 +103,15 @@ void BaseApp::SetSquaredFont()
     free(mLpConsoleCurrentFontEx);
 }
 
-void BaseApp::SetChar(int x, int y, wchar_t c, int attributes)
+void BaseApp::SetChar(COORD coord, CellStyle cellStyle)
 {
-	mChiBuffer[x + (X_SIZE+1)*y].Char.UnicodeChar = c;
-	mChiBuffer[x + (X_SIZE+1)*y].Attributes = attributes;
+	mChiBuffer[coord.Y*(SIZE_X + 1) + coord.X].Char.UnicodeChar = cellStyle.mSymbol;
+    mChiBuffer[coord.Y*(SIZE_X + 1) + coord.X].Attributes = cellStyle.mAttributes;
 }
 
-wchar_t BaseApp::GetChar(int x, int y)
+wchar_t BaseApp::GetChar(COORD coord)
 {
-	return mChiBuffer[x + (X_SIZE+1)*y].Char.UnicodeChar;
+	return mChiBuffer[coord.Y*(SIZE_X + 1) + coord.X].Char.UnicodeChar;
 }
 
 void BaseApp::Render()
@@ -142,13 +143,10 @@ void BaseApp::Run()
 		UpdateF((float)deltaTime / 1000.0f);
 		Render();
 
-		while (1)
-		{
-			deltaTime = timer.Now();
-			if (deltaTime >= 17)
-				break;
-		}
-
+        deltaTime = 0;
+        while (deltaTime < 0.0001) {
+            deltaTime += timer.Now();
+        }
 
 		sum += deltaTime;
 		counter++;

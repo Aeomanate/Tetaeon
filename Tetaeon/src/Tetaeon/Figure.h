@@ -4,48 +4,67 @@
 #include <Windows.h>
 #include "CellTypes.h"
 
+
 class Figure
 {
+public:
+    enum class IsConsistentCheck { DO_CHECK, DONT_CHECK };
+
 private:
-	std::vector<Cell> original;  // Local position with center at (0, 0)
+    static int FIGURE_MUTATE_PROBABILITY;
+    static int CELL_MUTATE_PROBABILITY;
+
+	std::vector<DisplayCell> mOriginalDisplayCells;  // Local position with center at (0, 0)
 	struct State {
-		std::vector<Cell> cells; // On game field
-		COORD pos; // Position on display of figure
+		std::vector<DisplayCell> mDisplayCells; // On game field
+		COORD mPosOnField; // Position on display of figure
 		int rotation; // In PI/2 chapters
 
 		bool operator==(State const& other) const;
-	} cached, cur;
+	} mCached, mTempState;
+
+    float mIntervalFall;
+    float mSinceLastFallSec;
 
     // Call for each rotate or move transform
     static std::function<bool(COORD const&)> mFieldConsistentChecker;
 
-    // Transform original figure position and check if it permissible 
-    // Return true if recalc successful and figure not restored from cache
-	bool Recalc(bool isCheckConsistent = true);
+    // Transform original figure position
+    // Return true if new state is consistent 
+	bool Recalc(IsConsistentCheck isConsistentCheck = IsConsistentCheck::DO_CHECK);
 
-    // Store to cache if consistent check is success, return true
-    // Restore from cache otherwise, return false
-    bool CacheOrDischargeTransform(bool isCheckConsistent);
+    // Return true if consistent check is success, store temp state to cache
+    // Return false otherwise, restore from cache
+    bool CacheOrDischargeTransform(IsConsistentCheck isConsistentCheck);
 
 public:
     // Call when field is constructed
     static void SetFieldConsistentChecker(std::function<bool(COORD const&)> newFieldConsistentChecker);
 
 	// Points with center of figure at (0, 0)
-	Figure(std::vector<Cell> points);
+	Figure(std::vector<DisplayCell> displayCells);
+
+    // Need for deep copy of DisplayCell
+    Figure(Figure const& other);
 
 	// Move by vetor, cache coord on field
-    // Return true if moved
-    // Param isCheck allow disable transform checks 
-	bool Move(COORD offset, bool isCheckConsistent = true);
+    // Return true if consistent check is successful 
+	bool Move(COORD offset, IsConsistentCheck isConsistentCheck = IsConsistentCheck::DO_CHECK);
 
 	// Add 90 degree rotation clockwise around (0, 0) point
     // Cache coord on field
     // Return true if rotated
 	bool Rotate();
 
-	// Return transformed cached points of figure at game field
-	std::vector<Cell> const& GetCells();
+    // Random insert explosive cells 
+    void MutateCells();
+
+    // Move figure down 
+    // Return true if successful moved or if not time to move
+    bool Update(float dtSec);
+
+	// Grab transformed cached points of figure at game field
+	std::vector<DisplayCell>&& GrabCells();
 
 };
 

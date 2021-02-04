@@ -7,6 +7,7 @@
 #include <vector>
 #include <string>
 #include <Windows.h>
+#include "../Utility.h"
 
 class BaseApp
 {
@@ -26,8 +27,8 @@ private:
 
 public:
 	//размеры области вывода по горизонтали и вертикали в символах
-	const int X_SIZE;
-	const int Y_SIZE;
+	const int SIZE_X;
+	const int SIZE_Y;
 
 	//аргументами €вл€ютс€ размеры области вывода по горизонтали и вертикали в символах
 	BaseApp(int xSize=100, int ySize=80);
@@ -37,8 +38,8 @@ public:
 	void Run();
 
 	//можно заполнить x,y-символ экрана определенным символом, или считать его
-	void SetChar(int x, int y, wchar_t c, int attributes = FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_RED);
-	wchar_t GetChar(int x, int y);
+	void SetChar(COORD coord, CellStyle cellStyle);
+	wchar_t GetChar(COORD coord);
 
 	/*эта функци€ вызываетс€ каждую игровую итерацию, еЄ можно переопределить, в наследнике класса.
 	в неЄ приходит deltaTime - разница во времени между предыдущей итерацией и этой, в секундах*/

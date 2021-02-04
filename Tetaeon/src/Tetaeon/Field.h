@@ -6,18 +6,26 @@
 class Field
 { // This class store fixed cells from figures that had falled 
 private:
-    int xSize, ySize;
-    std::vector<CellType> cells;
+    const int SIZE_X, SIZE_Y, CENTER_X;
+    std::vector<std::shared_ptr<CellProperties>> mCellsProperties;
+
+    void SetCellProperties(DisplayCell&& displayCell);
+    std::shared_ptr<CellProperties>& GetCellProperties(COORD coord);
+
+    bool IsRowRegular(short y);
+    void ShiftDownFieldAt(COORD coord);
+    void ShiftDownFieldOnRow(short y);
 
 public:
-    Field(int xSize, int ySize);
+    Field(int sizeX, int sizeY);
 
-    void SetCell(COORD coord, CellType cellType);
+    std::shared_ptr<CellProperties const> GetCellProperties(COORD coord) const;
 
-    CellType GetCell(COORD coord);
+    // Insert taken cells into field 
+    bool StealCells(std::vector<DisplayCell>&& cells);
 
-    bool addCells(std::vector<Cell> const& cells);
-
-    int RemoveHorizontals();
+    int UpdateCells(float dtSec);
+    void UpdateFilledRows();
+    int Update(float dtSec);
 };
 

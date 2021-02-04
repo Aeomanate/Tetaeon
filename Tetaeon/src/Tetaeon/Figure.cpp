@@ -1,75 +1,113 @@
 #include "Figure.h"
 #define _USE_MATH_DEFINES
 #include <math.h>
-#include "../Debug.h"
 
 bool Figure::State::operator==(State const& other) const 
 {
 	return
 		rotation == other.rotation and
-		pos.X == other.pos.X and
-		pos.Y == other.pos.Y;
+		mPosOnField.X == other.mPosOnField.X and
+		mPosOnField.Y == other.mPosOnField.Y;
 }
+
+int Figure::FIGURE_MUTATE_PROBABILITY = 20;
+int Figure::CELL_MUTATE_PROBABILITY = 20;
 
 std::function<bool(COORD const&)> Figure::mFieldConsistentChecker;
 
-Figure::Figure(std::vector<Cell> points)
-: original(points)
-, cached({ original, {0, 0}, 0 })
-, cur(cached)
+Figure::Figure(std::vector<DisplayCell> displayCells)
+: mOriginalDisplayCells(displayCells)
+, mCached()
+, mTempState(mCached)
+, mIntervalFall(0.25f)
+, mSinceLastFallSec(0)
 { }
 
-bool Figure::Recalc(bool isCheckConsistent)
+Figure::Figure(Figure const& other)
+: mIntervalFall(other.mIntervalFall)
+, mSinceLastFallSec(other.mSinceLastFallSec)
 {
-	double angle = M_PI_2 * cur.rotation;
-
-	for (size_t i = 0; i != original.size(); ++i) 
+    mOriginalDisplayCells.reserve(other.mOriginalDisplayCells.size());
+    for (int i = 0; i != other.mOriginalDisplayCells.size(); ++i) 
     {
-        cur.cells[i] = original[i];
-        cur.cells[i] = original[i];
+        mOriginalDisplayCells.push_back(
+            DisplayCell { 
+                other.mOriginalDisplayCells[i].mPosOnField, 
+                other.mOriginalDisplayCells[i].mProperties->clone()
+            }
+        );
+    }
+    mTempState = other.mTempState;
+    mCached = other.mCached;
 
-        for (int rotates = 0; rotates != cur.rotation; ++rotates)
-        {
-            short prevX = cur.cells[i].coord.X;
-            short prevY = cur.cells[i].coord.Y;
-            cur.cells[i].coord.X = -prevY;
-            cur.cells[i].coord.Y = prevX;
-        }
-		cur.cells[i].coord.X += cur.pos.X;
-		cur.cells[i].coord.Y += cur.pos.Y;
-	}
-    return CacheOrDischargeTransform(isCheckConsistent);
 }
 
-bool Figure::CacheOrDischargeTransform(bool isCheckConsistent)
+bool Figure::Recalc(IsConsistentCheck isConsistentCheck)
 {
-    if (isCheckConsistent)
+    mTempState.mDisplayCells = mOriginalDisplayCells;
+	for (size_t i = 0; i != mOriginalDisplayCells.size(); ++i) 
     {
-        // Dout() << "   - Check -   " << std::endl;
-        for (auto const& point : cur.cells)
+        for (int rotates = 0; rotates != mTempState.rotation; ++rotates)
         {
-            if (!mFieldConsistentChecker(point.coord))
+            short prevX = mTempState.mDisplayCells[i].mPosOnField.X;
+            short prevY = mTempState.mDisplayCells[i].mPosOnField.Y;
+            mTempState.mDisplayCells[i].mPosOnField.X = -prevY;
+            mTempState.mDisplayCells[i].mPosOnField.Y = prevX;
+        }
+		mTempState.mDisplayCells[i].mPosOnField += mTempState.mPosOnField;
+	}
+    return CacheOrDischargeTransform(isConsistentCheck);
+}
+
+bool Figure::CacheOrDischargeTransform(IsConsistentCheck isConsistentCheck)
+{
+    if (isConsistentCheck == IsConsistentCheck::DO_CHECK)
+    {
+        for (DisplayCell const& displayCell : mTempState.mDisplayCells)
+        {
+            if (!mFieldConsistentChecker(displayCell.mPosOnField))
             {
-                cur = cached;
+                mTempState = mCached;
                 return false;
             }
         }
     }
-    cached = cur;
+    mCached = mTempState;
     return true;
 }
 
-bool Figure::Move(COORD offset, bool isCheckConsistent)
+bool Figure::Move(COORD offset, IsConsistentCheck isConsistentCheck)
 {
-	cur.pos.X += offset.X;
-	cur.pos.Y += offset.Y;
-	return Recalc(isCheckConsistent);
+	mTempState.mPosOnField += offset;
+	return Recalc(isConsistentCheck);
 }
 
 bool Figure::Rotate()
 {
-	cur.rotation = (cur.rotation + 1) % 4;
+	mTempState.rotation = (mTempState.rotation + 1) % 4;
 	return Recalc();
+}
+
+void Figure::MutateCells()
+{
+    if (rand() % 101 > FIGURE_MUTATE_PROBABILITY) return;
+
+    for (int i = 0; i != mOriginalDisplayCells.size(); ++i) {
+        if (rand() % 101 > CELL_MUTATE_PROBABILITY) continue;
+        mTempState.mDisplayCells[i].mProperties = 
+        mCached.mDisplayCells[i].mProperties = 
+        mOriginalDisplayCells[i].mProperties = std::make_shared<CellCircleExplosion>();
+        return;
+    }
+}
+
+bool Figure::Update(float dtSec)
+{
+    mSinceLastFallSec += dtSec;
+    if (mSinceLastFallSec < mIntervalFall) return true;
+    mSinceLastFallSec = 0;
+
+    return Move({ 0, 1 });
 }
 
 void Figure::SetFieldConsistentChecker(std::function<bool(COORD const&)> newFieldConsistentChecker)
@@ -77,7 +115,7 @@ void Figure::SetFieldConsistentChecker(std::function<bool(COORD const&)> newFiel
     mFieldConsistentChecker = newFieldConsistentChecker;
 }
 
-std::vector<Cell> const& Figure::GetCells()
+std::vector<DisplayCell>&& Figure::GrabCells()
 {
-	return cached.cells;
+	return std::move(mCached.mDisplayCells);
 }
