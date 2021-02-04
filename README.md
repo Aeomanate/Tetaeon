@@ -10,6 +10,8 @@ This version of tetris made as test task for Nordcurrent with their BaseApp clas
 ## Additional features
 * Achieved score
 * Squared and colored console symbols
+* Polymorphic cells: regular, red-line for row that being remove, circle bomb
+* Fit font size to screen size (experimental) 
 
 ## How to run
 * Download and open sln file (VS2017)
