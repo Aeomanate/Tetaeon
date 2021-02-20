@@ -34,7 +34,7 @@ private:
 private:
 	void SetInfoHorizontal(std::wstring str, COORD pos);
     void SetInfoVertical(std::wstring str, COORD pos);
-	std::function<bool(COORD const&)> CreateFieldConsistentChecker() const;
+	std::function<bool(COORD const&)> CreateFieldConsistentChecker();
     Figure GetRandFigure() const;
 
 

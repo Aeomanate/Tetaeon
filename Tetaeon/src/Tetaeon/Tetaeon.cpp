@@ -16,10 +16,6 @@ const COORD Tetaeon::INFO_CREDITS_DEV_POS = {
     INFO_SCORE_POS.X,
     INFO_SCORE_POS.Y + BORDER_SIZE + 1
 };
-const COORD Tetaeon::INFO_CREDITS_FOR_POS = {
-    INFO_SCORE_POS.X + INFO_WIDTH - 3,
-    INFO_SCORE_POS.Y + BORDER_SIZE + 1
-};
 
 // X to right, Y to down
 const Figure Tetaeon::FIGURES[] =
@@ -157,10 +153,8 @@ Tetaeon::Tetaeon()
 	SetChar({right    , infoScoreEnd}, L'╠');
 	SetChar({infoRight, infoScoreEnd}, L'╣');
 
-    SetInfoHorizontal(L"dev", INFO_CREDITS_DEV_POS);
-    SetInfoVertical(L"Aeomanate", { INFO_CREDITS_DEV_POS.X + 1, INFO_CREDITS_DEV_POS.Y + 3 });
-    SetInfoHorizontal(L"for", INFO_CREDITS_FOR_POS);
-    SetInfoVertical(L"Nordcurrent", { INFO_CREDITS_FOR_POS.X + 1, INFO_CREDITS_FOR_POS.Y + 2 });
+    SetInfoHorizontal(L"Credits", INFO_CREDITS_DEV_POS);
+    SetInfoVertical(L"Aeomanate", { INFO_CREDITS_DEV_POS.X + INFO_WIDTH / 2, INFO_CREDITS_DEV_POS.Y + 2 });
 
     Figure::SetFieldConsistentChecker(CreateFieldConsistentChecker()); 
     PrintNextFigure();
@@ -180,7 +174,7 @@ void Tetaeon::SetInfoVertical(std::wstring str, COORD pos)
     }
 }
 
-std::function<bool(COORD const&)> Tetaeon::CreateFieldConsistentChecker() const
+std::function<bool(COORD const&)> Tetaeon::CreateFieldConsistentChecker()
 {
 	return [this](COORD const& c) {
         if (c.Y <= 0) return true;
@@ -198,6 +192,9 @@ Figure Tetaeon::GetRandFigure() const
     Figure new_figure(FIGURES[rand() % std::size(FIGURES)]);
     new_figure.Move({ FIELD_SIZE.X / 2, 0 }, Figure::IsConsistentCheck::DONT_CHECK); // Center and out of top of field
     new_figure.MutateCells();
+
+    new_figure.setUpdateDelay(0.55 - 0.044*log(90+mScore));
+
     return new_figure;
 }
 
@@ -215,7 +212,7 @@ void Tetaeon::KeyPressed(int btnCode)
 void Tetaeon::UpdateFigureF(float dtSec) 
 {
     if (mCurFigure.Update(dtSec)) return;
-    if(!mField.StealCells(mCurFigure.GrabCells())) 
+    if(!mField.SetCells(mCurFigure.GrabCells())) 
         throw std::runtime_error("End game");
 
     mCurFigure = mNextFigure;
@@ -246,7 +243,7 @@ void Tetaeon::PrintField(float dtSec)
 {
     for (short y = 1; y <= FIELD_SIZE.Y; ++y) {
         for (short x = 1; x <= FIELD_SIZE.X; ++x) {
-            SetChar({ x, y }, static_cast<Field const*>(&mField)->GetCellProperties({ x, y })->GetCellStyle());
+            SetChar({ x, y }, mField.GetCellProperties({ x, y })->GetCellStyle());
         }
     }
 }

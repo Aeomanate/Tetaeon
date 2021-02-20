@@ -9,20 +9,25 @@ private:
     const int SIZE_X, SIZE_Y, CENTER_X;
     std::vector<std::shared_ptr<CellProperties>> mCellsProperties;
 
-    void SetCellProperties(DisplayCell&& displayCell);
-    std::shared_ptr<CellProperties>& GetCellProperties(COORD coord);
 
     bool IsRowRegular(short y);
     void ShiftDownFieldAt(COORD coord);
-    void ShiftDownFieldOnRow(short y);
+
 
 public:
     Field(int sizeX, int sizeY);
+    int CountCols() const;
+    int CountRows() const;
 
-    std::shared_ptr<CellProperties const> GetCellProperties(COORD coord) const;
+
+    std::shared_ptr<CellProperties>& GetCellProperties(COORD coord);
 
     // Insert taken cells into field 
-    bool StealCells(std::vector<DisplayCell>&& cells);
+    void SetCellProperties(DisplayCell&& displayCell);
+    bool SetCells(std::vector<DisplayCell>&& cells);
+
+    // Swap two cell properties by it coords 
+    void SwapCells(COORD a, COORD b);
 
     int UpdateCells(float dtSec);
     void UpdateFilledRows();

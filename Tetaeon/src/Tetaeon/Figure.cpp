@@ -17,16 +17,14 @@ std::function<bool(COORD const&)> Figure::mFieldConsistentChecker;
 
 Figure::Figure(std::vector<DisplayCell> displayCells)
 : mOriginalDisplayCells(displayCells)
-, mCached()
-, mTempState(mCached)
-, mIntervalFall(0.25f)
-, mSinceLastFallSec(0)
 { }
 
 Figure::Figure(Figure const& other)
 : mIntervalFall(other.mIntervalFall)
-, mSinceLastFallSec(other.mSinceLastFallSec)
+, mSinceLastFallSec(0.0f)
 {
+    // Be cause the properties is shared_ptr
+    // we need deep copy for set new figure via copy of preset figure
     mOriginalDisplayCells.reserve(other.mOriginalDisplayCells.size());
     for (int i = 0; i != other.mOriginalDisplayCells.size(); ++i) 
     {
@@ -40,6 +38,11 @@ Figure::Figure(Figure const& other)
     mTempState = other.mTempState;
     mCached = other.mCached;
 
+}
+
+void Figure::setUpdateDelay(float new_delay)
+{
+    mIntervalFall = new_delay;
 }
 
 bool Figure::Recalc(IsConsistentCheck isConsistentCheck)
@@ -56,10 +59,10 @@ bool Figure::Recalc(IsConsistentCheck isConsistentCheck)
         }
 		mTempState.mDisplayCells[i].mPosOnField += mTempState.mPosOnField;
 	}
-    return CacheOrDischargeTransform(isConsistentCheck);
+    return TryCacheTransform(isConsistentCheck);
 }
 
-bool Figure::CacheOrDischargeTransform(IsConsistentCheck isConsistentCheck)
+bool Figure::TryCacheTransform(IsConsistentCheck isConsistentCheck)
 {
     if (isConsistentCheck == IsConsistentCheck::DO_CHECK)
     {
@@ -96,7 +99,7 @@ void Figure::MutateCells()
         if (rand() % 101 > CELL_MUTATE_PROBABILITY) continue;
         mTempState.mDisplayCells[i].mProperties = 
         mCached.mDisplayCells[i].mProperties = 
-        mOriginalDisplayCells[i].mProperties = std::make_shared<CellCircleExplosion>();
+        mOriginalDisplayCells[i].mProperties = std::make_shared<CircleExplosionCell>();
         return;
     }
 }

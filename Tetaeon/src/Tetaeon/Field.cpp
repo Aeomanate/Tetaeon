@@ -12,15 +12,14 @@ Field::Field(int sizeX, int sizeY)
     }
 }
 
+int Field::CountCols() const { return SIZE_X; }
+
+int Field::CountRows() const { return SIZE_Y; }
+
 std::shared_ptr<CellProperties>& Field::GetCellProperties(COORD coord)
 {
     coord -= {1, 1};
     return mCellsProperties[coord.Y * SIZE_X + coord.X];
-}
-
-std::shared_ptr<CellProperties const> Field::GetCellProperties(COORD coord) const
-{
-    return const_cast<Field*>(this)->GetCellProperties(coord);
 }
 
 void Field::SetCellProperties(DisplayCell&& displayCell)
@@ -29,7 +28,7 @@ void Field::SetCellProperties(DisplayCell&& displayCell)
     mCellsProperties[displayCell.mPosOnField.Y * SIZE_X + displayCell.mPosOnField.X] = displayCell.mProperties;
 }
 
-bool Field::StealCells(std::vector<DisplayCell>&& displayCells)
+bool Field::SetCells(std::vector<DisplayCell>&& displayCells)
 {
     for (DisplayCell& displayCell : displayCells)
     {
@@ -40,12 +39,16 @@ bool Field::StealCells(std::vector<DisplayCell>&& displayCells)
     return true;
 }
 
+void Field::SwapCells(COORD a, COORD b) 
+{
+    std::swap(GetCellProperties(a), GetCellProperties(b));
+}
+
 bool Field::IsRowRegular(short y) 
 {
     for (short x = 1; x <= SIZE_X; ++x)
     {
-        std::shared_ptr<CellProperties>& curCell = GetCellProperties({ x, y });
-        if (curCell->IsFree() or curCell->IsActivated() or curCell->isGravityAbove())
+        if (!GetCellProperties({ x, y })->IsActivable())
         {
             return false;
         }
@@ -69,19 +72,11 @@ void Field::ShiftDownFieldAt(COORD coord)
     }
 }
 
-void Field::ShiftDownFieldOnRow(short y)
-{
-    for (short x = 1; x <= SIZE_X; ++x)
-    {
-        ShiftDownFieldAt({ x, y });
-    }
-}
-
 int Field::UpdateCells(float dtSec)
 {
     int score = 0;
 
-    for (short y = 1; y <= SIZE_Y; ++y)
+    for (short y = SIZE_Y; y >= 1; --y)
     {
         for (short x = 1; x <= SIZE_X; ++x)
         {
@@ -89,11 +84,17 @@ int Field::UpdateCells(float dtSec)
 
             if (curCell->IsReadyToDestroy())
             {
-                ShiftDownFieldAt({ x, y });
+                if (curCell->IsShiftFieldDown())
+                {
+                    ShiftDownFieldAt({ x, y });
+                }
+                else
+                {
+                    SetCellProperties(DisplayCell{ {x, y}, std::make_shared<FreeCell>() });
+                }
                 score += 1;
             }
-
-            StealCells(curCell->Update({ x, y }, dtSec, *this));
+            curCell->Update({ x, y }, dtSec, *this);
         }
     }
 

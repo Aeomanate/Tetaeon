@@ -34,8 +34,8 @@ private:
 	bool Recalc(IsConsistentCheck isConsistentCheck = IsConsistentCheck::DO_CHECK);
 
     // Return true if consistent check is success, store temp state to cache
-    // Return false otherwise, restore from cache
-    bool CacheOrDischargeTransform(IsConsistentCheck isConsistentCheck);
+    // Return false otherwise, restore state from cache
+    bool TryCacheTransform(IsConsistentCheck isConsistentCheck);
 
 public:
     // Call when field is constructed
@@ -46,6 +46,9 @@ public:
 
     // Need for deep copy of DisplayCell
     Figure(Figure const& other);
+
+    // Set the delay of move with depend on player score
+    void setUpdateDelay(float new_delay);
 
 	// Move by vetor, cache coord on field
     // Return true if consistent check is successful 

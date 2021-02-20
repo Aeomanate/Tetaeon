@@ -5,7 +5,7 @@
 #include <functional>
 #include <Windows.h>
 #include "../Utility.h"
- 
+
 class CellProperties;
 class ClonablePropertiesBase
 {
@@ -16,7 +16,7 @@ public:
 
 
 template <class Derived>
-class ClonableProperties: virtual public ClonablePropertiesBase
+class ClonableProperties : virtual public ClonablePropertiesBase
 {
 public:
     std::shared_ptr<CellProperties> clone() const override {
@@ -30,23 +30,27 @@ class Field;
 class CellProperties : public virtual ClonablePropertiesBase
 {
 private:
-    bool mIsGravityAbove = false;
+    bool mIsFall = false;
+    float mFallInterval = 0.02f;
+    float mLastFall = 0;
+
 public:
-    bool isGravityAbove() const;
-    void SetGravityAbove(bool isGravityAbove);
+    void SetFall(bool isFall);
 
     virtual bool IsFree() const;
     virtual CellStyle GetCellStyle() const = 0;
-    
+
     // Need to activate explosions when cell may be replaced by removing line
+    // Or for mark cell as in deal with remove process 
     // Return true if activation successful
     virtual bool TryActivate(int updatesToActivate);
     virtual bool IsActivated() const;
+    bool IsActivable() const;
 
     virtual bool IsReadyToDestroy() const;
+    virtual bool IsShiftFieldDown() const;
 
-    // Update this cell and return vector of new near cells
-    virtual std::vector<DisplayCell> Update(COORD thisCoord, float dtSec, Field const& field);
+    virtual void Update(COORD thisCoord, float dtSec, Field& field);
 };
 
 
@@ -61,7 +65,7 @@ public:
 };
 
 
-class RegularCell : public CellProperties, public ClonableProperties<RegularCell>
+class FigureCell : public CellProperties, public ClonableProperties<FigureCell>
 {
 public:
     CellStyle GetCellStyle() const override;
@@ -70,19 +74,20 @@ public:
 
 struct DisplayCell {
     COORD mPosOnField;
-    std::shared_ptr<CellProperties> mProperties{ std::make_shared<RegularCell>() };
+    std::shared_ptr<CellProperties> mProperties{ std::make_shared<FigureCell>() };
 };
 
 
 class HorizontalLineCell : public CellProperties, public ClonableProperties<HorizontalLineCell>
 {
+    friend class CircleExplosionCell;
 private:
-    CellStyle mStyle = RegularCell().GetCellStyle();
-    COORD mSpreadDirection;
+    CellStyle mStyle;
     int mUpdatesToShown;
     int mUpdatesToDestroy;
-    float mUpdateDelaySec = 0.05f;
-    float mLastUpdateSec = 0.0f;
+    static float mUpdateDelaySec;
+    float mLastUpdateSec;
+
 public:
     HorizontalLineCell(int updatesToShow, int updatesToDestroy);
 
@@ -92,25 +97,47 @@ public:
     bool TryActivate(int updatesToActivate) override;
     bool IsActivated() const override;
 
-    std::vector<DisplayCell> Update(COORD thisCoord, float dtSec, Field const& field) override;
+    void Update(COORD thisCoord, float dtSec, Field& field) override;
 };
 
 
-class CellCircleExplosion: public CellProperties, public ClonableProperties<CellCircleExplosion>
+class CircleExplosionCell: public CellProperties, public ClonableProperties<CircleExplosionCell>
 {
+    friend class MarkedByExplosionCell;
 private:
-    int mExplosionRadius = 3; // Exterminate when radius equals to zero 
-    bool mIsActivated = false;
-    int mUpdatesToActivate = -1;
-    CellStyle mCellStyle = { L'■', BACKGROUND_GREEN | FOREGROUND_RED | FOREGROUND_GREEN };
+    static float mExplosionUpdateDelay;
+    static int mExplosionRadius; // Exterminate when radius equals to zero 
+    int mCurMarkRadius;
+    float mLastUpdateSec;
 
-    float mUpdateInterval = 0.05f;
-    float mLastUpdateSec = 0.0f;
+    bool mIsActivated;
+    int mUpdatesToActivate;
+    CellStyle mCellStyle;
+
 public:
-
+    CircleExplosionCell();
     CellStyle GetCellStyle() const override;
     bool TryActivate(int updatesToActivate) override;
     bool IsActivated() const override;
+    bool IsReadyToDestroy() const override;
+    bool IsShiftFieldDown() const override;
+    void Update(COORD thisCoord, float dtSec, Field& field) override;
+};
 
-    std::vector<DisplayCell> Update(COORD thisCoord, float dtSec, Field const& field) override;
+
+class MarkedByExplosionCell: public CellProperties, public ClonableProperties<MarkedByExplosionCell> 
+{
+private:
+    CellStyle mStyle;
+    int mUpdatesToDestroy;
+    float mLastUpdateSec;
+
+public:
+    MarkedByExplosionCell(int updatesToDestroy);
+    CellStyle GetCellStyle() const override;
+    bool IsActivated() const { return true; }
+    bool TryActivate() { return true; }
+    bool IsReadyToDestroy() const override;
+    bool IsShiftFieldDown() const override;
+    void Update(COORD thisCoord, float dtSec, Field& field) override;
 };
