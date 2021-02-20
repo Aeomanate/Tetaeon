@@ -12,14 +12,14 @@ This version of tetris made as test task for Nordcurrent with their BaseApp clas
 * Logariphmic game speed control via score of player 
 * Squared and colored console symbols
 * Polymorphic cells: 
-* * regular, 
-* * red-line while row is remove, 
-* * circle bomb
+  * regular, 
+  * red-line while row is remove, 
+  * circle bomb
 * Enabling gravity while explode 
 * Fit font size to screen size (experimental)
 
 ## How to run
 * Download and open sln file (VS2017)
 * Compile & run
-* 
+
 Or just download Tetaeon.exe from releases
